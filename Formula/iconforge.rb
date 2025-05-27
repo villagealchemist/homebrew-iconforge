@@ -9,14 +9,11 @@ class Iconforge < Formula
   depends_on :macos
 
   def install
-    # The tarball unpacks into iconforge-1.0.0/
-    cd "iconforge-#{version}" do
-      bin.install "bin/iconforge.sh" => "iconforge"
-    end
+    # Install directly from the nested directory without cd
+    bin.install "iconforge-#{version}/bin/iconforge.sh" => "iconforge"
   end
 
   test do
-    # Verify that iconforge runs and reports the correct version
     output = shell_output("#{bin}/iconforge --version")
     assert_match "iconforge v#{version}", output
   end
