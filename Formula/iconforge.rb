@@ -7,14 +7,14 @@ class Iconforge < Formula
   version "1.0.0"
 
   depends_on :macos
-  # No additional dependencies—uses built-in sips, iconutil, find.
 
   def install
-    bin.install "bin/iconforge.sh" => "iconforge"
+    cd "iconforge-#{version}" do
+      bin.install "bin/iconforge.sh" => "iconforge"
+    end
   end
 
   test do
-    # Verify that the binary runs and prints its version
     output = shell_output("#{bin}/iconforge --version")
     assert_match "iconforge v1.0.0", output
   end
