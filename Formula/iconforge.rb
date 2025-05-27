@@ -9,9 +9,7 @@ class Iconforge < Formula
   depends_on :macos
 
   def install
-    cd "iconforge-#{version}" do
-      bin.install "bin/iconforge.sh" => "iconforge"
-    end
+    bin.install "iconforge-#{version}/bin/iconforge.sh" => "iconforge"
   end
 
   test do
