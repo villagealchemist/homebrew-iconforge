@@ -9,8 +9,8 @@ class Iconforge < Formula
   depends_on :macos
 
   def install
-    # Install directly from the nested directory without cd
-    bin.install "iconforge-#{version}/bin/iconforge.sh" => "iconforge"
+    # Homebrew has already unpacked into iconforge-1.0.0/, so bin/iconforge.sh is directly addressable.
+    bin.install "bin/iconforge.sh" => "iconforge"
   end
 
   test do
