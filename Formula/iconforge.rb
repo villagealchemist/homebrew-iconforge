@@ -1,20 +1,33 @@
 class Iconforge < Formula
-  desc "Convert any image into a macOS .icns icon bundle from the terminal"
+  desc "Forge, inspect, apply, restore, and refresh macOS app icons"
   homepage "https://github.com/villagealchemist/iconforge"
-  url "https://github.com/villagealchemist/iconforge/archive/refs/tags/v1.0.0.tar.gz"
-  sha256 "c3017ff6bb2d786b30b69f5b6a0a4d0e9d04af6ffc561f143546b5ded3ac5f18"
+  url "https://github.com/villagealchemist/iconforge/archive/refs/tags/v2.0.0.tar.gz"
+  sha256 "75925c3cf4145c8128c2d6fbb3f2eedc50c2f90d1e3298fcd1a0a635672b8ff0"
   license "MIT"
-  version "1.0.0"
 
+  depends_on "go" => :build
   depends_on :macos
 
   def install
-    # Homebrew has already unpacked into iconforge-1.0.0/, so bin/iconforge.sh is directly addressable.
-    bin.install "bin/iconforge.sh" => "iconforge"
+    cd "iconforge-processor" do
+      system "go", "build", "-ldflags", "-s -w -X main.version=#{version}", "-o", "iconforge-processor"
+    end
+    system "xcrun", "clang", "-fobjc-arc", "-Wall", "-Wextra",
+           "-framework", "AppKit", "-framework", "Foundation",
+           "iconforge-native-icon/main.m", "-o", "iconforge-native-icon/iconforge-native-icon"
+
+    libexec.install "VERSION"
+    libexec.install "iconforge.sh" => "iconforge"
+    libexec.install "iconforge-processor/iconforge-processor" => "iconforge-processor"
+    (libexec/"iconforge-native-icon").install "iconforge-native-icon/iconforge-native-icon"
+    libexec.install "lib"
+
+    (bin/"iconforge").write_env_script libexec/"iconforge", ICONFORGE_ROOT: libexec
   end
 
   test do
-    output = shell_output("#{bin}/iconforge --version")
-    assert_match "iconforge v#{version}", output
+    assert_match "iconforge v#{version}", shell_output("#{bin}/iconforge --version")
+    assert_match "iconforge-processor v#{version}", shell_output("#{libexec}/iconforge-processor version")
+    assert_match "usage:", shell_output("#{libexec}/iconforge-native-icon/iconforge-native-icon 2>&1", 64)
   end
 end
