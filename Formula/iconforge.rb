@@ -1,20 +1,59 @@
 class Iconforge < Formula
-  desc "Convert any image into a macOS .icns icon bundle from the terminal"
+  desc "Forge artwork into ICNS files and apply macOS app icons"
   homepage "https://github.com/villagealchemist/iconforge"
-  url "https://github.com/villagealchemist/iconforge/archive/refs/tags/v1.0.0.tar.gz"
-  sha256 "c3017ff6bb2d786b30b69f5b6a0a4d0e9d04af6ffc561f143546b5ded3ac5f18"
+  url "https://github.com/villagealchemist/iconforge/archive/b33ab4db20aeb0a17dd432709665114b007214eb.tar.gz"
+  version "2.0.0"
+  sha256 "765a0159297b5929e27e4946b09ff1eddca135a9e2bb26a54caf326afd6aa95b"
   license "MIT"
-  version "1.0.0"
 
+  depends_on "go" => :build
   depends_on :macos
 
   def install
-    # Homebrew has already unpacked into iconforge-1.0.0/, so bin/iconforge.sh is directly addressable.
-    bin.install "bin/iconforge.sh" => "iconforge"
+    cd "iconforge-processor" do
+      system "go", "build", "-mod=vendor", "-ldflags", "-s -w -X main.version=#{version}",
+             "-o", "iconforge-processor"
+    end
+    system "xcrun", "clang", "-fobjc-arc", "-Wall", "-Wextra",
+           "-framework", "AppKit", "-framework", "Foundation",
+           "iconforge-native-icon/main.m", "-o", "iconforge-native-icon/iconforge-native-icon"
+
+    libexec.install "VERSION"
+    libexec.install "LICENSE"
+    libexec.install "THIRD_PARTY_NOTICES.md"
+    libexec.install "iconforge.sh" => "iconforge"
+    (libexec/"iconforge-processor").install "iconforge-processor/iconforge-processor"
+    (libexec/"iconforge-native-icon").install "iconforge-native-icon/iconforge-native-icon"
+    libexec.install "lib"
+
+    bin.write_exec_script libexec/"iconforge"
   end
 
   test do
-    output = shell_output("#{bin}/iconforge --version")
-    assert_match "iconforge v#{version}", output
+    assert_match "iconforge v#{version}", shell_output("#{bin}/iconforge --version")
+    processor = libexec/"iconforge-processor/iconforge-processor"
+    native_helper = libexec/"iconforge-native-icon/iconforge-native-icon"
+    assert_match "iconforge-processor v#{version}", shell_output("#{processor} version")
+    assert_match "usage:", shell_output("#{native_helper} 2>&1", 64)
+
+    png = [
+      "89504e470d0a1a0a0000000d4948445200000001000000010804000000b51c0c02",
+      "0000000b4944415478da6364f80f00010501012718e3660000000049454e44ae426082",
+    ].join
+    (testpath/"test.png").binwrite [png].pack("H*")
+    system bin/"iconforge", "forge", testpath/"test.png",
+           "--output", testpath/"output"
+    icns = testpath/"output/test.icns"
+    iconset = testpath/"output/test.iconset"
+    assert_path_exists icns
+    system native_helper, "validate", icns
+    system "iconutil", "-c", "iconset", "-o", iconset, icns
+    %w[
+      icon_16x16.png icon_16x16@2x.png
+      icon_32x32.png icon_32x32@2x.png
+      icon_128x128.png icon_128x128@2x.png
+      icon_256x256.png icon_256x256@2x.png
+      icon_512x512.png icon_512x512@2x.png
+    ].each { |name| assert_path_exists iconset/name }
   end
 end
