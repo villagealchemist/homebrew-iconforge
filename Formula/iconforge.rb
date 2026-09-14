@@ -1,9 +1,9 @@
 class Iconforge < Formula
   desc "Forge artwork into ICNS files and apply macOS app icons"
   homepage "https://github.com/villagealchemist/iconforge"
-  url "https://github.com/villagealchemist/iconforge/archive/b33ab4db20aeb0a17dd432709665114b007214eb.tar.gz"
-  version "2.0.0"
-  sha256 "765a0159297b5929e27e4946b09ff1eddca135a9e2bb26a54caf326afd6aa95b"
+  url "https://github.com/villagealchemist/iconforge/archive/27682649d337f35901f6785116b44a8d9f7dc3aa.tar.gz"
+  version "2.1.0"
+  sha256 "2e86dd0998d1e430968ca1a43943ce32b66fa44af4ebdafaf32021dc756eb5c5"
   license "MIT"
 
   depends_on "go" => :build
@@ -41,6 +41,15 @@ class Iconforge < Formula
       "0000000b4944415478da6364f80f00010501012718e3660000000049454e44ae426082",
     ].join
     (testpath/"test.png").binwrite [png].pack("H*")
+
+    ENV["XDG_CONFIG_HOME"] = (testpath/"config").to_s
+    default_output = testpath/"default-output"
+    system bin/"iconforge", "config", "set", "default-directory", default_output
+    assert_equal default_output.to_s,
+                 shell_output("#{bin}/iconforge config get default-directory").strip
+    system bin/"iconforge", "forge", testpath/"test.png"
+    assert_path_exists default_output/"test.icns"
+
     system bin/"iconforge", "forge", testpath/"test.png",
            "--output", testpath/"output"
     icns = testpath/"output/test.icns"
