@@ -1,9 +1,9 @@
 class Iconforge < Formula
   desc "Forge artwork into ICNS files and apply macOS app icons"
   homepage "https://github.com/villagealchemist/iconforge"
-  url "https://github.com/villagealchemist/iconforge/archive/27682649d337f35901f6785116b44a8d9f7dc3aa.tar.gz"
-  version "2.1.0"
-  sha256 "2e86dd0998d1e430968ca1a43943ce32b66fa44af4ebdafaf32021dc756eb5c5"
+  url "https://github.com/villagealchemist/iconforge/archive/5c700110e542789771c9faeb5d5174ae854b454e.tar.gz"
+  version "2.2.0"
+  sha256 "f18f7b113d6b37c1488b986d3a40e8a27fc68790192a2dc105f15c25e7c575a8"
   license "MIT"
 
   depends_on "go" => :build
@@ -49,6 +49,45 @@ class Iconforge < Formula
                  shell_output("#{bin}/iconforge config get default-directory").strip
     system bin/"iconforge", "forge", testpath/"test.png"
     assert_path_exists default_output/"test.icns"
+
+    forge_output = testpath/"the-forge"
+    hearth = testpath/"the-hearth"
+    system bin/"iconforge", "config", "set", "the-forge", forge_output
+    system bin/"iconforge", "config", "set", "the-hearth", hearth
+    assert_equal forge_output.to_s, shell_output("#{bin}/iconforge config get the-forge").strip
+    assert_equal hearth.to_s, shell_output("#{bin}/iconforge config get the-hearth").strip
+    assert_equal default_output.to_s,
+                 shell_output("#{bin}/iconforge config get default-directory").strip
+    assert_equal (testpath/"config/iconforge/config.plist").to_s,
+                 shell_output("#{bin}/iconforge config path").strip
+    configuration = shell_output("#{bin}/iconforge config show")
+    assert_match "source: the-forge", configuration
+    assert_match "source: the-hearth", configuration
+    system bin/"iconforge", "forge", testpath/"test.png", "HearthTest"
+    assert_path_exists forge_output/"HearthTest.icns"
+    refute_path_exists default_output/"HearthTest.icns"
+    refute_path_exists hearth/"HearthTest.icns"
+
+    hearth.mkpath
+    cp forge_output/"HearthTest.icns", hearth/"HearthTest.icns"
+    app = testpath/"HearthTest.app"
+    (app/"Contents/Resources").mkpath
+    (app/"Contents/Info.plist").write <<~PLIST
+      <?xml version="1.0" encoding="UTF-8"?>
+      <plist version="1.0"><dict>
+        <key>CFBundleIdentifier</key><string>org.iconforge.test.HearthTest</string>
+        <key>CFBundleName</key><string>HearthTest</string>
+      </dict></plist>
+    PLIST
+    assert_match (hearth/"HearthTest.icns").to_s,
+                 shell_output("#{bin}/iconforge apply #{app} --dry-run")
+    assert_match "Backend: macos", shell_output("#{bin}/iconforge capabilities")
+    assert_match processor.to_s, shell_output("#{bin}/iconforge doctor")
+    assert_match "_iconforge_complete", shell_output("#{bin}/iconforge completion bash")
+
+    system bin/"iconforge", "config", "unset", "the-forge"
+    assert_equal hearth.to_s, shell_output("#{bin}/iconforge config get the-hearth").strip
+    assert_match "source: default-directory (legacy)", shell_output("#{bin}/iconforge config show")
 
     system bin/"iconforge", "forge", testpath/"test.png",
            "--output", testpath/"output"
