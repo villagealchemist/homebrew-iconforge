@@ -1,9 +1,9 @@
 class Iconforge < Formula
   desc "Forge artwork into ICNS files and apply macOS app icons"
   homepage "https://github.com/villagealchemist/iconforge"
-  url "https://github.com/villagealchemist/iconforge/archive/5c700110e542789771c9faeb5d5174ae854b454e.tar.gz"
-  version "2.2.0"
-  sha256 "f18f7b113d6b37c1488b986d3a40e8a27fc68790192a2dc105f15c25e7c575a8"
+  url "https://github.com/villagealchemist/iconforge/archive/refs/tags/v2.3.0.tar.gz"
+  version "2.3.0"
+  sha256 "6ef1bcea5827071352315710ad0182c332f4d685b90eb1097061dce606082ab0"
   license "MIT"
 
   depends_on "go" => :build
